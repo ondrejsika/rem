@@ -1,0 +1,157 @@
+#!/usr/bin/env python
+
+"""
+# rem - repositories manager
+
+    Ondrej Sika <ondrej@ondrejsika.com>
+    https://github.com/ondrejsika/rem
+
+Simple repositories manager
+"""
+
+import os
+import json
+import argparse
+import subprocess
+
+
+class Runtime(object):
+    def __init__(self, dry=False, verbose=True, args=None, argparse_args=None):
+        assert args is None or isinstance(args, dict)
+
+        self._dry = dry
+        self._verbose = verbose
+        self._args = args or {}
+        self._argparse_args = argparse_args or {}
+
+    def get_dry(self):
+        return self._dry
+
+    def get_verbose(self):
+        return self._verbose
+
+    def get_args(self):
+        return self._args
+
+    def get_argparse_args(self):
+        return self._argparse_args
+
+RUNTIME_NODRY_NOVERBOSE = Runtime(dry=False, verbose=False)
+
+
+def _popen_system(command):
+    p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    p.wait()
+    return p.returncode, p.stdout.read(), p.stderr.read()
+
+
+def _system(command, runtime=None):
+    runtime = runtime or Runtime()
+
+    if runtime.get_dry():
+        print command
+    else:
+        if runtime.get_verbose():
+            print '>', command
+        return_code, stdout, stderr = _popen_system(command)
+        if runtime.get_verbose():
+            if stdout:
+                print 'STDOUT:'
+                print stdout
+            if stderr:
+                print 'STDERR:'
+                print stderr
+            print ''
+        return return_code, stdout, stderr
+
+
+def _git(command, repo_path, runtime=None):
+    runtime = runtime or Runtime()
+    return _system('git -C %s %s' % (repo_path, command), runtime)
+
+
+class Repo(object):
+    def __init__(self, path, remotes, checkout, runtime=None):
+        self._path = path
+        self._remotes = remotes
+        self._checkout = checkout
+        self._runtime = runtime or Runtime()
+
+        if not os.path.exists(self._path):
+            _system('mkdir -p %s' % self._path, self._runtime)
+
+        self.git('init')
+
+    def git(self, command, runtime=None):
+        return _git(command, self._path, runtime or self._runtime)
+
+    def get_remotes(self):
+        _, raw_remotes, _ = self.git('remote', runtime=RUNTIME_NODRY_NOVERBOSE)
+        return filter(None, raw_remotes.split('\n'))
+
+    def get_branches(self):
+        _, raw_branches, _ = self.git('branch', runtime=RUNTIME_NODRY_NOVERBOSE)
+        return filter(None, map(lambda branch: branch.replace('*', '').replace(' ', ''), raw_branches.split('\n')))
+
+    def update_remotes(self):
+        remotes = set(self.get_remotes())
+        for name, source in self._remotes.items():
+            if name not in remotes:
+                self.git('remote add %s %s' % (name, source))
+            self.git('remote set-url %s %s' % (name, source))
+
+    def checkout(self):
+        if self._checkout[0] not in set(self.get_branches()):
+            self.git('checkout -b %s %s' % (self._checkout[0], self._checkout[1]))
+        else:
+            self.git('checkout %s' % (self._checkout[0]))
+            self.git('reset --hard %s' % (self._checkout[1]))
+
+    def update(self):
+        self.update_remotes()
+        self.git('fetch --all')
+        self.checkout()
+
+
+def apply(runtime, conf_path, path):
+    conf = json.loads(file(conf_path).read())
+
+    for repo in conf['repositories']:
+        repo['path'] = os.path.join(path, conf['repository_path_prefix'], repo['path'])
+        repo = Repo(runtime=runtime, **repo)
+        repo.update()
+
+    for include in conf['includes']:
+        apply(runtime, include, os.path.dirname(include))
+
+
+root_parser = argparse.ArgumentParser()
+root_subparsers = root_parser.add_subparsers(dest='command0')
+root_parser.add_argument('--dry', action='store_true')
+root_parser.add_argument('--quiet', action='store_true')
+root_parser.add_argument('-c', '--config_file', default='rem.json')
+
+root_subparsers.add_parser('update')
+
+
+args = root_parser.parse_args()
+
+runtime = Runtime(dry=args.dry,
+                  verbose=not args.quiet,
+                  argparse_args=args)
+
+
+def _get_method_key_from_args(args_):
+    key = []
+    i = 0
+    while True:
+        part = getattr(args_, 'command%d' % i, None)
+        if part:
+            key.append(part)
+            i += 1
+        else:
+            return tuple(key)
+
+status_code = {
+    ('update', ): lambda args: apply(runtime, args.config_file, os.path.dirname(args.config_file)),
+}[_get_method_key_from_args(args)](args)
