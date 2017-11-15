@@ -127,11 +127,11 @@ def apply(runtime, conf_path, path):
 
 root_parser = argparse.ArgumentParser()
 root_subparsers = root_parser.add_subparsers(dest='command0')
-root_parser.add_argument('--dry', action='store_true')
-root_parser.add_argument('--quiet', action='store_true')
-root_parser.add_argument('-c', '--config_file', default='rem.json')
+root_parser.add_argument('--dry', action='store_true', help='prints out the commands without execution')
+root_parser.add_argument('--quiet', action='store_true', help='quiet output doesn\'t shows command and outputs')
+root_parser.add_argument('-c', '--config_file', default='rem.json', help='config file path, default is "rem.json"')
 
-root_subparsers.add_parser('update')
+root_subparsers.add_parser('update', help='update repositories to state defined in config')
 
 
 args = root_parser.parse_args()
