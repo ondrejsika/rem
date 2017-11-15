@@ -9,6 +9,12 @@ Simple repositories manager
 ## Install
 
 ```
+sudo pip install git+https://github.com/ondrejsika/rem.git
+```
+
+or
+
+```
 git clone git@github.com:ondrejsika/rem.git
 cd rem
 sudo pip install -e .
