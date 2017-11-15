@@ -1,0 +1,21 @@
+{
+    "version": "1",
+    "repository_path_prefix": "www",
+    "repositories": [
+        {
+            "path": "skoleni-git.cz",
+            "remotes": {
+                "origin": "git@github.com:ondrejsika/skoleni-git.cz.git"
+            },
+            "checkout": ["master", "origin/master"]
+        },
+        {
+            "path": "skoleni-docker.cz",
+            "remotes": {
+                "origin": "git@github.com:ondrejsika/skoleni-docker.cz.git"
+            },
+            "checkout": ["master", "origin/master"]
+        }
+    ],
+    "includes": []
+}

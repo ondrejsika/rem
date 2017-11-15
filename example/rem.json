@@ -1,0 +1,17 @@
+{
+    "version": "1",
+    "repository_path_prefix": "www",
+    "repositories": [
+        {
+            "path": "ondrejsika.com",
+            "remotes": {
+                "origin": "git@github.com:ondrejsika/ondrejsika.com.git"
+            },
+            "checkout": ["master", "origin/master"]
+        }
+    ],
+    "includes": [
+        "rem-www.json"
+    ]
+}
+
