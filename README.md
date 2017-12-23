@@ -3,7 +3,7 @@
     Ondrej Sika <ondrej@ondrejsika.com>
     https://github.com/ondrejsika/rem
 
-Simple repositories manager
+Simple Git **re**positories **m**anager written for Python 2.
 
 
 ## Install
@@ -22,7 +22,7 @@ sudo pip install -e .
 
 ## Usage
 
-Run `tem --help` for this help:
+Run `rem --help` for this help:
 
 ```
 usage: rem [-h] [--dry] [--quiet] [-c CONFIG_FILE] {update} ...
